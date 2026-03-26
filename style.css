@@ -979,3 +979,63 @@ footer {
         display: none;
     }
 }
+
+/* -------------------------------------------
+RELOAD BUTTON IM MENÜ
+-------------------------------------------- */
+.menu-reload-btn {
+    margin-top: 8px;
+    background: #0a84ff !important;
+    box-shadow: 0 2px 0 #0060df !important;
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px !important;
+    font-size: 15px;
+    border-radius: 10px;
+    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+.menu-reload-btn:active {
+    transform: translateY(2px) !important;
+    box-shadow: 0 1px 0 #0060df !important;
+}
+
+/* -------------------------------------------
+ABMELDEN BUTTON FEEDBACK
+-------------------------------------------- */
+.logout-btn {
+    margin-top: 8px;
+    background: #ff453a !important;
+    box-shadow: 0 2px 0 #cc372e !important;
+    width: 100%;
+    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+.logout-btn:active {
+    transform: translateY(2px) !important;
+    box-shadow: 0 1px 0 #cc372e !important;
+}
+
+/* -------------------------------------------
+CONFIRM BUTTON - IMMER BLAU
+-------------------------------------------- */
+#confirmAddListBtn {
+    background: #0a84ff !important;
+    box-shadow: 0 4px 0 #0060df !important;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+}
+
+#confirmAddListBtn:active {
+    transform: scale(0.95) !important;
+    box-shadow: 0 2px 0 #0060df !important;
+}
