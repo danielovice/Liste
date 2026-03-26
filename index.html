@@ -1,40 +1,57 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
+    <!-- Zeichensatz UTF-8 für deutsche Umlaute -->
     <meta charset="UTF-8">
+    <!-- Viewport-Einstellungen für Mobile Geräte -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- iOS Web App Einstellungen -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- Titel der Website -->
     <title>Todo</title>
+    <!-- Verknüpfung mit CSS Datei -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Hauptcontainer für die gesamte Seite -->
     <div class="page-container">
-        <!-- Auth Modal -->
+        
+        <!-- ==================== AUTH MODAL (Login/Register) ==================== -->
         <div id="authModal" class="auth-modal">
+            <!-- Inhalt des Auth Modals -->
             <div class="auth-content">
+                <!-- Überschrift des Modals -->
                 <div class="auth-header">
                     <h2 id="authTitle">Anmelden</h2>
                 </div>
+                <!-- Formular für Login/Register -->
                 <div class="auth-form">
+                    <!-- Eingabefeld für Benutzername -->
                     <div class="input-group">
                         <label for="authUsername">Benutzername</label>
                         <input type="text" id="authUsername" autocomplete="username">
                     </div>
+                    <!-- Eingabefeld für Passwort mit Toggle-Button -->
                     <div class="input-group">
                         <label for="authPassword">Passwort</label>
                         <div class="password-wrapper">
                             <input type="password" id="authPassword" autocomplete="current-password">
+                            <!-- Button zum Ein-/Ausblenden des Passworts -->
                             <button type="button" class="toggle-password" onclick="togglePassword()">🔓</button>
                         </div>
                     </div>
+                    <!-- Checkbox für "Angemeldet bleiben" -->
                     <label class="remember-me">
                         <input type="checkbox" id="rememberMe">
                         <span class="checkmark"></span>
                         Angemeldet bleiben
                     </label>
+                    <!-- Fehlermeldung -->
                     <div id="authError" class="auth-error"></div>
+                    <!-- Submit Button -->
                     <button id="authSubmitBtn" class="auth-submit">Anmelden</button>
+                    <!-- Wechsel zwischen Login und Register -->
                     <div class="auth-switch">
                         Noch kein Konto?
                         <button id="authSwitchBtn" class="auth-switch-btn">Registrieren</button>
@@ -43,60 +60,83 @@
             </div>
         </div>
 
-        <!-- Navbar -->
+        <!-- ==================== NAVBAR ==================== -->
         <div class="navbar">
+            <!-- Logo links -->
             <div class="logo" id="logo">TODO</div>
+            <!-- Buttons rechts -->
             <div class="nav-buttons">
+                <!-- Button zum Hinzufügen neuer Liste -->
                 <button id="addListBtn">+</button>
+                <!-- Menü Button (Hamburger) -->
                 <button id="menuBtn">☰</button>
             </div>
         </div>
 
-        <!-- App Container -->
+        <!-- ==================== HAUPT-APP ==================== -->
         <div class="app">
+            <!-- Titel der aktuellen Liste (klickbar zum Bearbeiten) -->
             <h1 id="listTitle">Meine Liste</h1>
             
+            <!-- Eingabebereich für neue Todos -->
             <div class="input-area">
+                <!-- Text-Eingabefeld -->
                 <input type="text" id="todoInput" placeholder="Hinzufügen">
+                <!-- Button zum Hinzufügen -->
                 <button id="addBtn">+</button>
             </div>
+            <!-- Autocomplete-Vorschlagsliste -->
             <div id="autocompleteList" class="autocomplete-list"></div>
 
+            <!-- Filter-Buttons (Offen/Erledigt) -->
             <div class="filters">
                 <button class="filter-btn" data-filter="offen">Offen</button>
                 <button class="filter-btn" data-filter="erledigt">Erledigt</button>
             </div>
 
+            <!-- Counter für erledigte Todos -->
             <div id="counter">0 von 0 erledigt</div>
 
+            <!-- Liste der Todos -->
             <ul id="todoList"></ul>
         </div>
 
-        <!-- Menu Dropdown -->
+        <!-- ==================== MENÜ DROPDOWN ==================== -->
         <div id="menuDropdown">
+            <!-- Container für Listen-Tabs -->
             <div id="listTabs"></div>
+            <!-- Untere Buttons (Abmelden + Reload) -->
             <div class="menu-bottom-buttons">
-                <button id="reloadBtn" class="menu-reload-btn">⟳ Neu laden</button>
+                <!-- Abmelden Button -->
                 <button id="logoutBtn" class="logout-btn">Abmelden</button>
+                <!-- Reload Button (nur Symbol) -->
+                <button id="reloadBtn" class="reload-btn">⟳</button>
             </div>
         </div>
 
-        <!-- Footer -->
+        <!-- ==================== FOOTER ==================== -->
         <footer>
             Abschlussprojekt 2026 Beigans Daniel<br>
             HTBLA Traun
         </footer>
     </div>
 
-    <!-- Add List Modal -->
+    <!-- ==================== MODAL: NEUE LISTE HINZUFÜGEN ==================== -->
     <div id="addListModal" class="modal">
+        <!-- Modal Inhalt -->
         <div class="modal-content">
+            <!-- Modal Header: X links, Titel mitte -->
             <div class="modal-header">
-                <button id="confirmAddListBtn" class="modal-save">✓</button>
-                <h2>Neue Liste</h2>
+                <!-- X Button zum Schließen (LINKS) -->
                 <button id="closeModalBtn" class="modal-close">✕</button>
+                <!-- Titel -->
+                <h2>Neue Liste</h2>
+                <!-- ✓ Button zum Speichern (RECHTS) -->
+                <button id="confirmAddListBtn" class="modal-save">✓</button>
             </div>
+            <!-- Eingabefeld für Listenname -->
             <input type="text" id="listNameInput" placeholder="Listenname">
+            <!-- Auswahl Listentyp -->
             <div class="list-type-selector">
                 <span>Listentyp</span>
                 <select id="listTypeSelect">
@@ -104,7 +144,9 @@
                     <option value="shopping">Einkaufsliste</option>
                 </select>
             </div>
+            <!-- Label für Farbauswahl -->
             <div class="color-label">Button-Farbe:</div>
+            <!-- Farbkreise zur Auswahl -->
             <div class="color-options">
                 <div class="color-circle" data-color="#ff453a" style="background: #ff453a;"></div>
                 <div class="color-circle" data-color="#ff9f0a" style="background: #ff9f0a;"></div>
@@ -115,10 +157,12 @@
                 <div class="color-circle" data-color="#bf5af2" style="background: #bf5af2;"></div>
                 <div class="color-circle" data-color="#ff375f" style="background: #ff375f;"></div>
             </div>
+            <!-- Vorschau der gewählten Farbe -->
             <div class="color-preview" id="colorPreview">✓</div>
         </div>
     </div>
 
+    <!-- Verknüpfung mit JavaScript Datei -->
     <script src="script.js"></script>
 </body>
 </html>
