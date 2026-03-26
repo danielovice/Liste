@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Abschlussprojekt</title>
+    <link rel="stylesheet" href="CSS/style.css">
+    <link rel="icon" type="image/png" href="pics/Screenshot 2026-03-12 185322.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#111111">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+</head>
+<body>
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal auth-modal">
+        <div class="modal-content auth-content">
+            <div class="auth-header">
+                <h2 id="authTitle">Anmelden</h2>
+            </div>
+            
+            <div class="auth-form">
+                <div class="input-group">
+                    <label for="authUsername">Benutzername</label>
+                    <input type="text" id="authUsername" placeholder="MaxMustermann" autocomplete="off">
+                </div>
+                
+                <div class="input-group">
+                    <label for="authPassword">Passwort</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="authPassword" placeholder="Passwort">
+                        <button type="button" id="togglePassword" class="toggle-password">👁</button>
+                    </div>
+                </div>
+                
+                <label class="remember-me">
+                    <input type="checkbox" id="rememberMe" checked>
+                    <span class="checkmark"></span>
+                    Angemeldet bleiben
+                </label>
+                
+                <div id="authError" class="auth-error"></div>
+                
+                <button id="authSubmitBtn" class="auth-submit">Anmelden</button>
+                
+                <div class="auth-switch">
+                    <span id="authSwitchText">Noch kein Konto?</span>
+                    <button id="authSwitchBtn" class="auth-switch-btn">Registrieren</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-container">
+        <div class="navbar">
+            <div class="logo">TODO</div>
+            <div class="nav-buttons">
+                <button id="addListBtn">+</button>
+                <button id="menuBtn">☰</button>
+            </div>
+        </div>
+        
+        <div id="menuDropdown">
+            <div id="listTabs"></div>
+            <button id="logoutBtn" class="logout-btn">Abmelden</button>
+        </div>
+
+        <div class="app">
+            <h1 id="listTitle">Meine Liste</h1>
+            <div class="input-area">
+                <input id="todoInput" type="text" placeholder="Neues Todo...">
+                <button id="addBtn">Hinzufügen</button>
+            </div>
+            
+            <div id="autocompleteList" class="autocomplete-list"></div>
+            
+            <div class="filters">
+                <button class="filter-btn" data-filter="offen">Offen</button>
+                <button class="filter-btn" data-filter="erledigt">Erledigt</button>
+            </div>
+            <p id="counter">0 von 0 erledigt</p>
+            <ul id="todoList"></ul>
+        </div>
+
+        <footer>
+            Abschlussprojekt 2026 Beigans Daniel <br>
+            HTBLA Traun
+        </footer>
+    </div>
+
+    <div id="addListModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button class="modal-close" id="closeModalBtn">✕</button>
+                <h2>Neue Liste</h2>
+                <button class="modal-save" id="confirmAddListBtn">✓</button>
+            </div>
+
+            <div class="color-preview" id="colorPreview">
+                <svg width="80" height="80" viewBox="0 0 80 80">
+                    <circle cx="40" cy="40" r="35" fill="currentColor"/>
+                    <circle cx="28" cy="32" r="3" fill="white"/>
+                    <circle cx="28" cy="40" r="3" fill="white"/>
+                    <circle cx="28" cy="48" r="3" fill="white"/>
+                    <rect x="38" y="29" width="22" height="3" rx="1.5" fill="white"/>
+                    <rect x="38" y="37" width="22" height="3" rx="1.5" fill="white"/>
+                    <rect x="38" y="45" width="22" height="3" rx="1.5" fill="white"/>
+                </svg>
+            </div>
+
+            <input type="text" id="listNameInput" placeholder="Name der Liste">
+
+            <div class="list-type-selector">
+                <span>Listentyp</span>
+                <select id="listTypeSelect">
+                    <option value="todo">Todo-Liste</option>
+                    <option value="shopping">Einkaufsliste</option>
+                </select>
+            </div>
+
+            <label class="color-label">Button-Farbe:</label>
+            <div class="color-options">
+                <div class="color-circle" data-color="#ff3b30" style="background:#ff3b30;"></div>
+                <div class="color-circle" data-color="#ff9500" style="background:#ff9500;"></div>
+                <div class="color-circle" data-color="#ffcc00" style="background:#ffcc00;"></div>
+                <div class="color-circle" data-color="#34c759" style="background:#34c759;"></div>
+                <div class="color-circle" data-color="#5ac8fa" style="background:#5ac8fa;"></div>
+                <div class="color-circle selected" data-color="#0a84ff" style="background:#0a84ff;"></div>
+                <div class="color-circle" data-color="#5856d6" style="background:#5856d6;"></div>
+                <div class="color-circle" data-color="#ff2d55" style="background:#ff2d55;"></div>
+                <div class="color-circle" data-color="#bf5af2" style="background:#bf5af2;"></div>
+                <div class="color-circle" data-color="#c7a56b" style="background:#c7a56b;"></div>
+                <div class="color-circle" data-color="#8e8e93" style="background:#8e8e93;"></div>
+                <div class="color-circle" data-color="#f5c7be" style="background:#f5c7be;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="JavaScript/firebase-config.js"></script>
+    <script type="module" src="JavaScript/script.js"></script>
+</body>
+</html>
