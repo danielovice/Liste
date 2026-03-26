@@ -1,199 +1,199 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+const express = require('express');
+const mongoose = require('mongoose');
 const crypto = require('crypto');
+const cors = require('cors');
 
-const PORT = 3000;
-const DATA_DIR = __dirname;
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-const MIME_TYPES = {
-    '.html': 'text/html; charset=utf-8',
-    '.css': 'text/css; charset=utf-8',
-    '.js': 'application/javascript; charset=utf-8',
-    '.json': 'application/json; charset=utf-8',
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.ico': 'image/x-icon'
-};
+// MongoDB Connection
+mongoose.connect(process.env.MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB verbunden'))
+.catch(err => console.error('❌ MongoDB Fehler:', err));
 
-function hashPassword(password) {
-    return crypto.createHash('sha256').update(password).digest('hex');
-}
+// Middleware
+app.use(cors({
+    origin: [
+        'https://danielovice.github.io',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+    ],
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+app.use(express.json());
 
-function getUserFile(username) {
-    return path.join(DATA_DIR, `user_${username.toLowerCase()}.json`);
-}
-
-function getTokenFile(token) {
-    return path.join(DATA_DIR, `token_${token}.json`);
-}
-
-const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Access-Control-Max-Age': '86400',
-    'Content-Type': 'application/json'
-};
-
-const server = http.createServer((req, res) => {
-    if (req.method === 'OPTIONS') {
-        res.writeHead(200, headers);
-        res.end();
-        return;
-    }
-
-    const url = req.url;
-    const method = req.method;
-    console.log(method + ' ' + url);
-
-    // === API ENDPOINTS ===
-    if (method === 'POST' && url === '/register') {
-        let body = '';
-        req.on('data', chunk => body += chunk);
-        req.on('end', () => {
-            try {
-                const { username, password } = JSON.parse(body);
-                if (!username || !password) {
-                    res.writeHead(400, headers);
-                    res.end(JSON.stringify({ error: 'Name und Passwort n�tig' }));
-                    return;
-                }
-                const userFile = getUserFile(username);
-                if (fs.existsSync(userFile)) {
-                    res.writeHead(409, headers);
-                    res.end(JSON.stringify({ error: 'Benutzer existiert bereits' }));
-                    return;
-                }
-                const userData = {
-                    username: username,
-                    password: hashPassword(password),
-                    created: new Date().toISOString(),
-                    lists: { "Meine Liste": { todos: [], type: "todo", color: "#0a84ff" } },
-                    listOrder: ["Meine Liste"],
-                    currentList: "Meine Liste"
-                };
-                fs.writeFileSync(userFile, JSON.stringify(userData, null, 2));
-                res.writeHead(201, headers);
-                res.end(JSON.stringify({ success: true }));
-            } catch (e) {
-                res.writeHead(400, headers);
-                res.end(JSON.stringify({ error: 'Fehler' }));
-            }
-        });
-        return;
-    }
-
-    if (method === 'POST' && url === '/login') {
-        let body = '';
-        req.on('data', chunk => body += chunk);
-        req.on('end', () => {
-            try {
-                const { username, password } = JSON.parse(body);
-                const userFile = getUserFile(username);
-                if (!fs.existsSync(userFile)) {
-                    res.writeHead(401, headers);
-                    res.end(JSON.stringify({ error: 'Falscher Name oder Passwort' }));
-                    return;
-                }
-                const userData = JSON.parse(fs.readFileSync(userFile, 'utf8'));
-                if (userData.password !== hashPassword(password)) {
-                    res.writeHead(401, headers);
-                    res.end(JSON.stringify({ error: 'Falscher Name oder Passwort' }));
-                    return;
-                }
-                const token = crypto.randomBytes(16).toString('hex');
-                fs.writeFileSync(getTokenFile(token), JSON.stringify({ username }));
-                res.writeHead(200, headers);
-                res.end(JSON.stringify({ success: true, token, username }));
-            } catch (e) {
-                res.writeHead(400, headers);
-                res.end(JSON.stringify({ error: 'Fehler' }));
-            }
-        });
-        return;
-    }
-
-    if (method === 'GET' && url === '/data') {
-        const token = req.headers['authorization'];
-        if (!token || !fs.existsSync(getTokenFile(token))) {
-            res.writeHead(401, headers);
-            res.end(JSON.stringify({ error: 'Nicht eingeloggt' }));
-            return;
-        }
-        const tokenData = JSON.parse(fs.readFileSync(getTokenFile(token), 'utf8'));
-        const userFile = getUserFile(tokenData.username);
-        const userData = JSON.parse(fs.readFileSync(userFile, 'utf8'));
-        delete userData.password;
-        res.writeHead(200, headers);
-        res.end(JSON.stringify(userData));
-        return;
-    }
-
-    if (method === 'POST' && url === '/data') {
-        const token = req.headers['authorization'];
-        if (!token || !fs.existsSync(getTokenFile(token))) {
-            res.writeHead(401, headers);
-            res.end(JSON.stringify({ error: 'Nicht eingeloggt' }));
-            return;
-        }
-        let body = '';
-        req.on('data', chunk => body += chunk);
-        req.on('end', () => {
-            try {
-                const tokenData = JSON.parse(fs.readFileSync(getTokenFile(token), 'utf8'));
-                const userFile = getUserFile(tokenData.username);
-                const userData = JSON.parse(fs.readFileSync(userFile, 'utf8'));
-                const newData = JSON.parse(body);
-                userData.lists = newData.lists;
-                userData.listOrder = newData.listOrder;
-                userData.currentList = newData.currentList;
-                userData.lastUpdate = new Date().toISOString();
-                fs.writeFileSync(userFile, JSON.stringify(userData, null, 2));
-                res.writeHead(200, headers);
-                res.end(JSON.stringify({ success: true }));
-            } catch (e) {
-                res.writeHead(400, headers);
-                res.end(JSON.stringify({ error: 'Fehler' }));
-            }
-        });
-        return;
-    }
-
-    if (method === 'POST' && url === '/logout') {
-        const token = req.headers['authorization'];
-        if (token && fs.existsSync(getTokenFile(token))) {
-            fs.unlinkSync(getTokenFile(token));
-        }
-        res.writeHead(200, headers);
-        res.end(JSON.stringify({ success: true }));
-        return;
-    }
-
-    // === STATIC FILES ===
-    let filePath = url === '/' ? '/index.html' : url;
-    filePath = filePath.split('?')[0];
-    filePath = path.join(DATA_DIR, filePath);
-    const ext = path.extname(filePath).toLowerCase();
-    const contentType = MIME_TYPES[ext] || 'application/octet-stream';
-
-    fs.readFile(filePath, (err, content) => {
-        if (err) {
-            if (err.code === 'ENOENT') {
-                res.writeHead(404, { 'Content-Type': 'text/html' });
-                res.end('<h1>404 - Datei nicht gefunden</h1>');
-            } else {
-                res.writeHead(500, { 'Content-Type': 'text/html' });
-                res.end('<h1>500 - Server Fehler</h1>');
-            }
-        } else {
-            res.writeHead(200, { 'Content-Type': contentType, ...headers });
-            res.end(content);
-        }
-    });
+// === SCHEMAS ===
+const userSchema = new mongoose.Schema({
+    username: { type: String, required: true, unique: true, lowercase: true },
+    password: { type: String, required: true },
+    lists: { 
+        type: Object, 
+        default: { "Meine Liste": { todos: [], type: "todo", color: "#0a84ff" }}
+    },
+    listOrder: { type: Array, default: ["Meine Liste"] },
+    currentList: { type: String, default: "Meine Liste" },
+    created: { type: Date, default: Date.now },
+    lastUpdate: Date
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-    console.log('Server l�uft auf Port ' + PORT);
-    console.log('Erreichbar unter: http://localhost:' + PORT);
+const tokenSchema = new mongoose.Schema({
+    token: { type: String, required: true, unique: true },
+    username: { type: String, required: true },
+    expires: { type: Date, required: true, expires: 0 }
+});
+
+const User = mongoose.model('User', userSchema);
+const Token = mongoose.model('Token', tokenSchema);
+
+// === HELPERS ===
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+    return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedHash) {
+    const [salt, hash] = storedHash.split(':');
+    const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+    return hash === verifyHash;
+}
+
+function generateToken() {
+    return crypto.randomBytes(32).toString('hex');
+}
+
+// === API ENDPOINTS ===
+
+// REGISTER
+app.post('/register', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        if (!username || !password || password.length < 4) {
+            return res.status(400).json({ error: 'Name und Passwort (min. 4 Zeichen) nötig' });
+        }
+        
+        const existing = await User.findOne({ username: username.toLowerCase() });
+        if (existing) {
+            return res.status(409).json({ error: 'Benutzer existiert bereits' });
+        }
+        
+        const newUser = new User({
+            username: username.toLowerCase(),
+            password: hashPassword(password),
+            lists: { "Meine Liste": { todos: [], type: "todo", color: "#0a84ff" }},
+            listOrder: ["Meine Liste"],
+            currentList: "Meine Liste"
+        });
+        
+        await newUser.save();
+        res.status(201).json({ success: true });
+        
+    } catch (e) {
+        console.error('Register Error:', e);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// LOGIN
+app.post('/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        const user = await User.findOne({ username: username.toLowerCase() });
+        if (!user || !verifyPassword(password, user.password)) {
+            return res.status(401).json({ error: 'Falscher Name oder Passwort' });
+        }
+        
+        const token = generateToken();
+        await new Token({
+            token,
+            username: user.username,
+            expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+        }).save();
+        
+        res.json({ success: true, token, username: user.username });
+        
+    } catch (e) {
+        console.error('Login Error:', e);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// GET DATA
+app.get('/data', async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        if (!token) return res.status(401).json({ error: 'Nicht eingeloggt' });
+        
+        const tokenDoc = await Token.findOne({ token });
+        if (!tokenDoc || tokenDoc.expires < new Date()) {
+            return res.status(401).json({ error: 'Token ungültig' });
+        }
+        
+        const user = await User.findOne({ username: tokenDoc.username });
+        if (!user) return res.status(404).json({ error: 'User nicht gefunden' });
+        
+        tokenDoc.expires = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        await tokenDoc.save();
+        
+        const userData = user.toObject();
+        delete userData.password;
+        res.json(userData);
+        
+    } catch (e) {
+        console.error('Get Data Error:', e);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// SAVE DATA
+app.post('/data', async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        if (!token) return res.status(401).json({ error: 'Nicht eingeloggt' });
+        
+        const tokenDoc = await Token.findOne({ token });
+        if (!tokenDoc || tokenDoc.expires < new Date()) {
+            return res.status(401).json({ error: 'Token ungültig' });
+        }
+        
+        const { lists, listOrder, currentList } = req.body;
+        
+        await User.findOneAndUpdate(
+            { username: tokenDoc.username },
+            { lists, listOrder, currentList, lastUpdate: new Date() }
+        );
+        
+        res.json({ success: true });
+        
+    } catch (e) {
+        console.error('Save Data Error:', e);
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// LOGOUT
+app.post('/logout', async (req, res) => {
+    try {
+        const token = req.headers['authorization'];
+        if (token) await Token.deleteOne({ token });
+        res.json({ success: true });
+    } catch (e) {
+        res.status(500).json({ error: 'Serverfehler' });
+    }
+});
+
+// HEALTH CHECK
+app.get('/', (req, res) => {
+    res.json({ status: 'OK', message: 'Todo API läuft!' });
+});
+
+// START SERVER
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server läuft auf Port ${PORT}`);
 });
