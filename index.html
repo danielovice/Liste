@@ -25,7 +25,7 @@
                         <label for="authPassword">Passwort</label>
                         <div class="password-wrapper">
                             <input type="password" id="authPassword" autocomplete="current-password">
-                            <button type="button" class="toggle-password" onclick="togglePassword()">👁</button>
+                            <button type="button" class="toggle-password" onclick="togglePassword()">🔓</button>
                         </div>
                     </div>
                     <label class="remember-me">
@@ -58,7 +58,7 @@
             
             <div class="input-area">
                 <input type="text" id="todoInput" placeholder="Hinzufügen">
-                <button id="addBtn">Hinzufügen</button>
+                <button id="addBtn">+</button>
             </div>
             <div id="autocompleteList" class="autocomplete-list"></div>
 
@@ -75,8 +75,10 @@
         <!-- Menu Dropdown -->
         <div id="menuDropdown">
             <div id="listTabs"></div>
-            <button id="reloadBtn" class="menu-reload-btn">⟳</button>
-            <button id="logoutBtn" class="logout-btn">Abmelden</button>
+            <div class="menu-bottom-buttons">
+                <button id="reloadBtn" class="menu-reload-btn">⟳ Neu laden</button>
+                <button id="logoutBtn" class="logout-btn">Abmelden</button>
+            </div>
         </div>
 
         <!-- Footer -->
@@ -90,6 +92,7 @@
     <div id="addListModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
+                <button id="confirmAddListBtn" class="modal-save">✓</button>
                 <h2>Neue Liste</h2>
                 <button id="closeModalBtn" class="modal-close">✕</button>
             </div>
@@ -113,7 +116,6 @@
                 <div class="color-circle" data-color="#ff375f" style="background: #ff375f;"></div>
             </div>
             <div class="color-preview" id="colorPreview">✓</div>
-            <button id="confirmAddListBtn" class="modal-save">✓</button>
         </div>
     </div>
 
