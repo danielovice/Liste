@@ -1,7 +1,10 @@
-// Dynamische API-URL für GitHub Pages + Render
+// === WICHTIG: Dynamische API_URL ===
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'
     : 'https://todo-backend-npkj.onrender.com';  // ← DEINE Render-URL hier!
+
+// Prüfen ob Mobile (iOS/Android)
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // Auth Variablen
 let token = localStorage.getItem('todo_token');
@@ -26,7 +29,7 @@ const authSubmitBtn = document.getElementById("authSubmitBtn");
 const authSwitchBtn = document.getElementById("authSwitchBtn");
 const authError = document.getElementById("authError");
 const logoutBtn = document.getElementById("logoutBtn");
-
+const reloadBtn = document.getElementById("reloadBtn");
 const input = document.getElementById("todoInput");
 const addBtn = document.getElementById("addBtn");
 const list = document.getElementById("todoList");
@@ -38,7 +41,6 @@ const menuBtn = document.getElementById("menuBtn");
 const menuDropdown = document.getElementById("menuDropdown");
 const addListBtn = document.getElementById("addListBtn");
 const autocompleteList = document.getElementById("autocompleteList");
-
 const addListModal = document.getElementById("addListModal");
 const listNameInput = document.getElementById("listNameInput");
 const listTypeSelect = document.getElementById("listTypeSelect");
@@ -48,9 +50,7 @@ const closeModalBtn = document.getElementById("closeModalBtn");
 const colorPreview = document.getElementById("colorPreview");
 
 /* -------------------------------   AUTH   ------------------------------- */
-
 function initAuth() {
-    // Event Listeners
     authSubmitBtn.addEventListener("click", handleAuth);
     authPassword.addEventListener("keypress", (e) => {
         if (e.key === "Enter") handleAuth();
@@ -58,15 +58,17 @@ function initAuth() {
     authUsername.addEventListener("keypress", (e) => {
         if (e.key === "Enter") authPassword.focus();
     });
-    
     authSwitchBtn.addEventListener("click", () => {
         isRegistering = !isRegistering;
         updateAuthUI();
     });
-    
     logoutBtn.addEventListener("click", logout);
     
-    // Prüfen ob eingeloggt
+    // RELOAD BUTTON
+    reloadBtn.addEventListener("click", () => {
+        location.reload();
+    });
+
     if (token && currentUser) {
         loadData();
     } else {
@@ -90,6 +92,11 @@ function updateAuthUI() {
 function showAuth() {
     authModal.classList.add("show");
     updateAuthUI();
+}
+
+function togglePassword() {
+    const type = authPassword.getAttribute("type") === "password" ? "text" : "password";
+    authPassword.setAttribute("type", type);
 }
 
 async function handleAuth() {
@@ -127,7 +134,6 @@ async function handleAuth() {
         }
         
         if (isRegistering) {
-            // Nach Registrierung zum Login wechseln
             isRegistering = false;
             authPassword.value = "";
             updateAuthUI();
@@ -136,7 +142,6 @@ async function handleAuth() {
             return;
         }
         
-        // Login erfolgreich
         token = data.token;
         currentUser = data.username;
         localStorage.setItem('todo_token', token);
@@ -162,17 +167,14 @@ async function logout() {
             headers: { 'Authorization': token }
         });
     }
-    
     localStorage.removeItem('todo_token');
     localStorage.removeItem('todo_user');
     token = null;
     currentUser = null;
-    
     showAuth();
 }
 
 /* -------------------------------   DATEN   ------------------------------- */
-
 async function loadData() {
     try {
         const response = await fetch(`${API_URL}/data`, {
@@ -186,7 +188,7 @@ async function loadData() {
         }
         
         const data = await response.json();
-        console.log("Geladen:", data); // Debug
+        console.log("Geladen: ", data);
         
         lists = data.lists || { 
             "Meine Liste": { todos: [], type: "todo", color: "#0a84ff" } 
@@ -203,7 +205,7 @@ async function loadData() {
         render();
         
     } catch (e) {
-        console.error("Laden fehlgeschlagen:", e);
+        console.error("Laden fehlgeschlagen: ", e);
         logout();
     }
 }
@@ -214,8 +216,7 @@ async function saveData() {
         listOrder: listOrder,
         currentList: currentList
     };
-    
-    console.log("Speichere:", data); // Debug
+    console.log("Speichere:", data);
     
     try {
         const response = await fetch(`${API_URL}/data`, {
@@ -228,17 +229,16 @@ async function saveData() {
         });
         
         const result = await response.json();
-        console.log("Server antwortet:", result); // Debug
+        console.log("Server antwortet:", result);
         
     } catch (e) {
         console.error("Speichern fehlgeschlagen:", e);
     }
 }
-/* -------------------------------   UI FUNKTIONEN   ------------------------------- */
 
+/* -------------------------------   UI FUNKTIONEN   ------------------------------- */
 function updateButtonColors(color) {
     currentListColor = color;
-    
     addListBtn.style.background = color;
     addListBtn.style.boxShadow = `0 4px 0 ${adjustColor(color, -20)}`;
     
@@ -257,14 +257,15 @@ function updateButtonColors(color) {
         }
     });
     
-    confirmAddListBtn.style.background = color;
-    confirmAddListBtn.style.boxShadow = `0 4px 0 ${adjustColor(color, -20)}`;
+    // CONFIRM BUTTON IMMER BLAU
+    confirmAddListBtn.style.background = "#0a84ff";
+    confirmAddListBtn.style.boxShadow = `0 4px 0 #0060df`;
     
     updateColorSelectionRing(color);
 }
 
 function adjustColor(color, amount) {
-    const num = parseInt(color.replace("#",""), 16);
+    const num = parseInt(color.replace("#", ""), 16);
     const r = Math.max(0, Math.min(255, (num >> 16) + amount));
     const g = Math.max(0, Math.min(255, ((num >> 8) & 0x00FF) + amount));
     const b = Math.max(0, Math.min(255, (num & 0x0000FF) + amount));
@@ -283,7 +284,6 @@ function updateColorSelectionRing(selectedColor) {
 }
 
 /* -------------------------------   MENU   ------------------------------- */
-
 menuBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     menuDropdown.classList.toggle("show");
@@ -296,8 +296,8 @@ document.addEventListener("click", (e) => {
 });
 
 /* -------------------------------   LISTENNAME BEARBEITEN   ------------------------------- */
-
 let lastTapTitle = 0;
+
 function handleTouchEditTitle() {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTapTitle;
@@ -310,7 +310,6 @@ listTitle.addEventListener("touchend", handleTouchEditTitle);
 
 function startEditingListTitle() {
     const currentName = currentList;
-    
     const inputField = document.createElement("input");
     inputField.type = "text";
     inputField.value = currentName;
@@ -343,7 +342,7 @@ function startEditingListTitle() {
     listTitle.appendChild(inputField);
     inputField.focus();
     inputField.select();
-
+    
     const saveEdit = () => {
         const newName = inputField.value.trim();
         if (newName && newName !== currentName) {
@@ -367,10 +366,16 @@ function startEditingListTitle() {
         listTitle.style.height = "";
         listTitle.style.position = "";
     };
-
+    
     inputField.addEventListener("blur", saveEdit);
     inputField.addEventListener("keypress", e => { 
-        if (e.key === "Enter") inputField.blur(); 
+        if (e.key === "Enter") {
+            if (isMobile) {
+                inputField.blur();
+            } else {
+                saveEdit();
+            }
+        }
     });
     inputField.addEventListener("keydown", e => { 
         if (e.key === "Escape") {
@@ -382,15 +387,14 @@ function startEditingListTitle() {
 }
 
 /* -------------------------------   COUNTER   ------------------------------- */
-
 function updateCounter() {
     const done = todos.filter(t => t.erledigt).length;
     counter.textContent = `${done} von ${todos.length} erledigt`;
 }
 
 /* -------------------------------   TODOS BEARBEITEN   ------------------------------- */
-
 let lastTapTodo = 0;
+
 function handleTouchEdit(span, index) {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTapTodo;
@@ -408,79 +412,44 @@ function startEditing(spanElement, index) {
     spanElement.replaceWith(inputField);
     inputField.focus();
     inputField.select();
-
+    
     const saveEdit = () => {
         const newText = inputField.value.trim();
         if (newText) todos[index].text = newText;
         saveData();
         render();
     };
-
+    
     inputField.addEventListener("blur", saveEdit);
-    inputField.addEventListener("keypress", e => { if (e.key === "Enter") inputField.blur(); });
+    inputField.addEventListener("keypress", e => { 
+        if (e.key === "Enter") {
+            if (isMobile) {
+                inputField.blur();
+            } else {
+                saveEdit();
+            }
+        }
+    });
     inputField.addEventListener("keydown", e => { if (e.key === "Escape") render(); });
 }
 
 /* -------------------------------   KATEGORISIERUNG   ------------------------------- */
-
 const internalSubCategories = {
-    'Milchprodukte': [
-        'milch', 'käse', 'joghurt', 'butter', 'sahne', 'quark', 'obers', 'topfen',
-        'frischkäse', 'mozzarella', 'feta', 'parmesan', 'gouda', 'emmentaler',
-        'camembert', 'brie', 'ricotta', 'hüttenkäse', 'schmelzkäse', 'margarine',
-        'eier', 'ei'
-    ],
-    'Obst': [
-        'apfel', 'birne', 'banane', 'orange', 'mandarine', 'zitrone', 'limette',
-        'traube', 'erdbeere', 'himbeere', 'heidelbeere', 'kirsche', 'pfirsich',
-        'marille', 'aprikose', 'melone', 'ananas', 'mango', 'kiwi', 'obst'
-    ],
-    'Gemüse': [
-        'tomate', 'gurke', 'salat', 'karotte', 'zwiebel', 'kartoffel', 'erdapfel',
-        'paprika', 'zucchini', 'aubergine', 'brokkoli', 'blumenkohl', 'kohl', 'kraut',
-        'spinat', 'lauch', 'sellerie', 'spargel', 'kürbis', 'pilz', 'champignon',
-        'knoblauch', 'ingwer', 'gemüse'
-    ],
-    'Fleisch': [
-        'fleisch', 'rind', 'schwein', 'kalb', 'lamm', 'huhn', 'hähnchen', 'pute',
-        'steak', 'schnitzel', 'fisch', 'lachs', 'thunfisch', 'garnelen',
-        'speck', 'schinken', 'bauch', 'ripperl', 'wammerl', 'beuschel'
-    ],
-    'Wurst': [
-        'wurst', 'salami', 'extrawurst', 'fleischwurst', 'käsekrainer', 'debreziner',
-        'bratwurst', 'wiener', 'frankfurter', 'leberkäse', 'pastete'
-    ],
-    'Brot': [
-        'brot', 'semmel', 'brötchen', 'weckerl', 'baguette', 'toast', 'vollkornbrot',
-        'mehl', 'nudel', 'pasta', 'spaghetti', 'reis', 'haferflocken', 'müsli',
-        'kuchen', 'torte', 'gebäck', 'kipferl', 'croissant', 'pizza'
-    ],
-    'Getränke': [
-        'wasser', 'saft', 'cola', 'bier', 'wein', 'sekt', 'limonade', 'energy',
-        'kaffee', 'tee', 'kakao', 'schnaps', 'wodka', 'whisky', 'most'
-    ],
-    'Snacks': [
-        'chips', 'flips', 'popcorn', 'cracker', 'salzstangen', 'nüsse', 'erdnuss',
-        'mandel', 'riegel', 'keks', 'gebäck', 'waffel', 'knabber'
-    ],
-    'Süßigkeiten': [
-        'schokolade', 'schoki', 'nougat', 'bonbon', 'lutscher', 'kaugummi',
-        'gummibärchen', 'lakritz', 'nutella', 'eis', 'eiscreme'
-    ],
-    'Haushalt': [
-        'papier', 'toilettenpapier', 'küchenpapier', 'taschentuch', 'tempo',
-        'reiniger', 'spülmittel', 'waschmittel', 'putzmittel', 'müllbeutel',
-        'schwamm', 'lappen', 'bürste', 'batterie', 'seife'
-    ],
-    'Sonstiges': [
-        'geschenk', 'buch', 'tier', 'hundefutter', 'katzenfutter', 'apotheke',
-        'medizin', 'kosmetik', 'shampoo', 'creme', 'deo'
-    ]
+    'Milchprodukte': ['milch', 'käse', 'joghurt', 'butter', 'sahne', 'quark', 'obers', 'topfen', 'frischkäse', 'mozzarella', 'feta', 'parmesan', 'gouda', 'emmentaler', 'camembert', 'brie', 'ricotta', 'hüttenkäse', 'schmelzkäse', 'margarine', 'eier', 'ei'],
+    'Obst': ['apfel', 'birne', 'banane', 'orange', 'mandarine', 'zitrone', 'limette', 'traube', 'erdbeere', 'himbeere', 'heidelbeere', 'kirsche', 'pfirsich', 'marille', 'aprikose', 'melone', 'ananas', 'mango', 'kiwi', 'obst'],
+    'Gemüse': ['tomate', 'gurke', 'salat', 'karotte', 'zwiebel', 'kartoffel', 'erdapfel', 'paprika', 'zucchini', 'aubergine', 'brokkoli', 'blumenkohl', 'kohl', 'kraut', 'spinat', 'lauch', 'sellerie', 'spargel', 'kürbis', 'pilz', 'champignon', 'knoblauch', 'ingwer', 'gemüse'],
+    'Fleisch': ['fleisch', 'rind', 'schwein', 'kalb', 'lamm', 'huhn', 'hähnchen', 'pute', 'steak', 'schnitzel', 'fisch', 'lachs', 'thunfisch', 'garnelen', 'speck', 'schinken', 'bauch', 'ripperl', 'wammerl', 'beuschel'],
+    'Wurst': ['wurst', 'salami', 'extrawurst', 'fleischwurst', 'käsekrainer', 'debreziner', 'bratwurst', 'wiener', 'frankfurter', 'leberkäse', 'pastete'],
+    'Brot': ['brot', 'semmel', 'brötchen', 'weckerl', 'baguette', 'toast', 'vollkornbrot', 'mehl', 'nudel', 'pasta', 'spaghetti', 'reis', 'haferflocken', 'müsli', 'kuchen', 'torte', 'gebäck', 'kipferl', 'croissant', 'pizza'],
+    'Getränke': ['wasser', 'saft', 'cola', 'bier', 'wein', 'sekt', 'limonade', 'energy', 'kaffee', 'tee', 'kakao', 'schnaps', 'wodka', 'whisky', 'most'],
+    'Snacks': ['chips', 'flips', 'popcorn', 'cracker', 'salzstangen', 'nüsse', 'erdnuss', 'mandel', 'riegel', 'keks', 'gebäck', 'waffel', 'knabber'],
+    'Süßigkeiten': ['schokolade', 'schoki', 'nougat', 'bonbon', 'lutscher', 'kaugummi', 'gummibärchen', 'lakritz', 'nutella', 'eis', 'eiscreme'],
+    'Haushalt': ['papier', 'toilettenpapier', 'küchenpapier', 'taschentuch', 'tempo', 'reiniger', 'spülmittel', 'waschmittel', 'putzmittel', 'müllbeutel', 'schwamm', 'lappen', 'bürste', 'batterie', 'seife'],
+    'Sonstiges': ['geschenk', 'buch', 'tier', 'hundefutter', 'katzenfutter', 'apotheke', 'medizin', 'kosmetik', 'shampoo', 'creme', 'deo']
 };
 
 function getInternalCategory(itemText) {
     const lowerText = itemText.toLowerCase().trim();
-    
     const compoundPatterns = [
         { pattern: /(milch)(.*)(brot|semmel|weckerl)/i, category: 'Brot' },
         { pattern: /(vollkorn)(.*)(brot)/i, category: 'Brot' },
@@ -521,7 +490,6 @@ function getInternalCategory(itemText) {
 function getMainCategory(itemText) {
     const internal = getInternalCategory(itemText);
     const foodCategories = ['Milchprodukte', 'Obst', 'Gemüse', 'Fleisch', 'Wurst', 'Brot', 'Getränke', 'Snacks', 'Süßigkeiten'];
-    
     if (foodCategories.includes(internal)) {
         return 'Lebensmittel';
     } else if (internal === 'Haushalt') {
@@ -537,7 +505,6 @@ function getFoodSortOrder(internalCategory) {
 }
 
 /* -------------------------------   AUTOCOMPLETE   ------------------------------- */
-
 function showAutocomplete(value) {
     const currentListData = lists[currentList];
     const isShoppingList = currentListData && currentListData.type === 'shopping';
@@ -572,35 +539,27 @@ function showAutocomplete(value) {
     suggestions.forEach(suggestion => {
         const div = document.createElement('div');
         div.className = 'autocomplete-item';
-        
         const regex = new RegExp(`(${value})`, 'gi');
         const highlighted = suggestion.replace(regex, '<span class="match">$1</span>');
         div.innerHTML = highlighted;
-        
         div.addEventListener('click', () => {
             input.value = suggestion;
             autocompleteList.classList.remove('show');
             autocompleteList.innerHTML = '';
             input.focus();
         });
-        
         autocompleteList.appendChild(div);
     });
-    
     autocompleteList.classList.add('show');
 }
 
-input.addEventListener('input', (e) => {
-    showAutocomplete(e.target.value);
-});
-
+input.addEventListener('input', (e) => { showAutocomplete(e.target.value); });
 input.addEventListener('blur', () => {
     setTimeout(() => {
         autocompleteList.classList.remove('show');
         autocompleteList.innerHTML = '';
     }, 200);
 });
-
 document.addEventListener('click', (e) => {
     if (!input.contains(e.target) && !autocompleteList.contains(e.target)) {
         autocompleteList.classList.remove('show');
@@ -609,32 +568,27 @@ document.addEventListener('click', (e) => {
 });
 
 /* -------------------------------   ZAHLEN HERVORHEBEN   ------------------------------- */
-
 function highlightNumbers(text) {
-    const numberPattern = /^(\d+\.?\d*\s*(g|kg|ml|l|st|stk|dag|cm|dm|mm|m|dl|cl|pack|packung|dose|flasche|glas)?\s*)/i;
+    const numberPattern = /^(\d+.?\d*\s*(g|kg|ml|l|st|stk|dag|cm|dm|mm|m|dl|cl|pack|packung|dose|flasche|glas)?\s*)/i;
     const match = text.match(numberPattern);
-    
     if (match) {
         const number = match[1];
         const rest = text.slice(number.length);
         return `<span class="quantity">${number}</span>${rest}`;
     }
-    
     return text;
 }
 
 /* -------------------------------   RENDERN   ------------------------------- */
-
 function render() {
     list.innerHTML = "";
-    
     if (!todos || !Array.isArray(todos)) { 
         todos = []; 
     }
-
+    
     const currentListData = lists[currentList];
     const isShoppingList = currentListData && currentListData.type === 'shopping';
-
+    
     if (isShoppingList) {
         let displayTodos = todos;
         if (filter === "offen") {
@@ -648,17 +602,12 @@ function render() {
             originalIndex: todos.indexOf(todo)
         }));
         
-        const categorizedItems = {
-            'Lebensmittel': [],
-            'Haushalt': [],
-            'Sonstiges': []
-        };
+        const categorizedItems = { 'Lebensmittel': [], 'Haushalt': [], 'Sonstiges': [] };
         
         itemsWithIndex.forEach(item => {
             const mainCat = getMainCategory(item.text);
             const internalCat = getInternalCategory(item.text);
             const sortOrder = getFoodSortOrder(internalCat);
-            
             categorizedItems[mainCat].push({
                 ...item,
                 _internalCategory: internalCat,
@@ -672,7 +621,6 @@ function render() {
             }
             return a.text.localeCompare(b.text);
         });
-        
         categorizedItems['Haushalt'].sort((a, b) => a.text.localeCompare(b.text));
         categorizedItems['Sonstiges'].sort((a, b) => a.text.localeCompare(b.text));
         
@@ -684,7 +632,6 @@ function render() {
                 categoryHeader.className = 'category-header';
                 categoryHeader.textContent = category;
                 list.appendChild(categoryHeader);
-
                 categorizedItems[category].forEach(item => {
                     createTodoElement(item, item.originalIndex, isShoppingList);
                 });
@@ -697,7 +644,7 @@ function render() {
             createTodoElement(todo, index, isShoppingList);
         });
     }
-
+    
     updateCounter();
     updateFilterButtons();
 }
@@ -705,10 +652,9 @@ function render() {
 function createTodoElement(todo, index, isShoppingList = false) {
     const li = document.createElement("li");
     li.dataset.index = index;
-
     const leftDiv = document.createElement("div");
     leftDiv.className = "li-left";
-
+    
     const dragHandle = document.createElement("div");
     dragHandle.className = "drag-handle";
     dragHandle.draggable = true;
@@ -716,28 +662,28 @@ function createTodoElement(todo, index, isShoppingList = false) {
     dragHandle.addEventListener("touchstart", handleTouchStart, { passive: false });
     dragHandle.addEventListener("touchmove", handleTouchMove, { passive: false });
     dragHandle.addEventListener("touchend", handleTouchEnd, { passive: false });
-
+    
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.dataset.action = "toggle";
     checkbox.dataset.index = index;
     if (todo.erledigt) checkbox.checked = true;
-
+    
     leftDiv.appendChild(dragHandle);
     leftDiv.appendChild(checkbox);
-
+    
     const span = document.createElement("span");
     span.innerHTML = isShoppingList ? highlightNumbers(todo.text) : todo.text;
     if (todo.erledigt) span.classList.add("erledigt");
     span.addEventListener("dblclick", e => { e.stopPropagation(); startEditing(span, index); });
     span.addEventListener("touchend", e => { e.stopPropagation(); handleTouchEdit(span, index); });
-
+    
     const delBtn = document.createElement("button");
     delBtn.textContent = "X";
     delBtn.className = "delete";
     delBtn.dataset.action = "delete";
     delBtn.dataset.index = index;
-
+    
     li.appendChild(leftDiv);
     li.appendChild(span);
     li.appendChild(delBtn);
@@ -745,7 +691,6 @@ function createTodoElement(todo, index, isShoppingList = false) {
 }
 
 /* -------------------------------   FILTER BUTTONS   ------------------------------- */
-
 function updateFilterButtons() {
     filterBtns.forEach(btn => {
         btn.classList.remove("active");
@@ -753,7 +698,6 @@ function updateFilterButtons() {
         btn.style.boxShadow = `0 3px 0 ${adjustColor(currentListColor, -20)}`;
         btn.style.border = "2px solid transparent";
         btn.style.transform = "scale(1)";
-        
         if (btn.dataset.filter === filter) {
             btn.classList.add("active");
             btn.style.border = "2px solid white";
@@ -763,35 +707,34 @@ function updateFilterButtons() {
 }
 
 /* -------------------------------   TODOS HINZUFÜGEN   ------------------------------- */
-
 function addTodo() {
     const text = input.value.trim();
     if (!text) return;
-    
     todos.push({ text, erledigt: false });
     input.value = "";
-    input.blur();
+    
+    // NUR AUF MOBILE TASTATUR SCHLIESSEN
+    if (isMobile) {
+        input.blur();
+    }
+    
     autocompleteList.classList.remove('show');
     autocompleteList.innerHTML = '';
-    
     lists[currentList].todos = todos;
-    
     saveData();
     render();
 }
 
 addBtn.addEventListener("click", addTodo);
-input.addEventListener("keypress", e => { 
-    if (e.key === "Enter") addTodo(); 
+input.addEventListener("keypress", e => {
+    if (e.key === "Enter") addTodo();
 });
 
 /* -------------------------------   EVENT DELEGATION   ------------------------------- */
-
 list.addEventListener("click", e => {
     const target = e.target;
     const action = target.dataset.action;
     const index = target.dataset.index;
-    
     if (!action || index === undefined) return;
     
     const idx = Number(index);
@@ -812,7 +755,6 @@ list.addEventListener("click", e => {
 });
 
 /* -------------------------------   FILTER   ------------------------------- */
-
 filterBtns.forEach(btn => {
     btn.addEventListener("click", () => {
         const value = btn.dataset.filter;
@@ -827,8 +769,8 @@ filterBtns.forEach(btn => {
 });
 
 /* -------------------------------   DRAG & DROP   ------------------------------- */
-
 let draggedItemIndex = null;
+
 list.addEventListener("dragstart", e => {
     const handle = e.target.closest(".drag-handle");
     if (!handle) return;
@@ -856,15 +798,15 @@ list.addEventListener("dragover", e => {
 list.addEventListener("drop", () => {
     const items = Array.from(list.children);
     const newTodos = [];
-    items.forEach(li => { 
-        const idx = Number(li.dataset.index); 
-        if (todos[idx] !== undefined) newTodos.push(todos[idx]); 
+    items.forEach(li => {
+        const idx = Number(li.dataset.index);
+        if (todos[idx] !== undefined) newTodos.push(todos[idx]);
     });
-    if (newTodos.length === todos.length) { 
-        todos = newTodos; 
+    if (newTodos.length === todos.length) {
+        todos = newTodos;
         lists[currentList].todos = todos;
-        saveData(); 
-        render(); 
+        saveData();
+        render();
     } else render();
 });
 
@@ -879,7 +821,6 @@ function getDragAfterElement(container, y) {
 }
 
 /* -------------------------------   TOUCH DRAG   ------------------------------- */
-
 let touchItem = null, touchStartY = 0, touchStartX = 0, hasMoved = false;
 
 function handleTouchStart(e) {
@@ -898,9 +839,9 @@ function handleTouchMove(e) {
     const touch = e.touches[0];
     const moveY = Math.abs(touch.clientY - touchStartY);
     const moveX = Math.abs(touch.clientX - touchStartX);
-    if (!hasMoved && moveY > 10 && moveY > moveX) { 
-        hasMoved = true; 
-        touchItem.classList.add("dragging"); 
+    if (!hasMoved && moveY > 10 && moveY > moveX) {
+        hasMoved = true;
+        touchItem.classList.add("dragging");
     }
     if (!hasMoved) return;
     e.preventDefault();
@@ -914,22 +855,21 @@ function handleTouchEnd() {
     touchItem.classList.remove("dragging");
     if (hasMoved) {
         const items = Array.from(list.children), newTodos = [];
-        items.forEach(li => { 
-            const idx = Number(li.dataset.index); 
-            if (todos[idx] !== undefined) newTodos.push(todos[idx]); 
+        items.forEach(li => {
+            const idx = Number(li.dataset.index);
+            if (todos[idx] !== undefined) newTodos.push(todos[idx]);
         });
-        if (newTodos.length === todos.length) { 
-            todos = newTodos; 
+        if (newTodos.length === todos.length) {
+            todos = newTodos;
             lists[currentList].todos = todos;
-            saveData(); 
-            render(); 
+            saveData();
+            render();
         }
     }
     touchItem = null; hasMoved = false;
 }
 
 /* -------------------------------   LISTEN MENÜ   ------------------------------- */
-
 let listDragItem = null;
 let listTouchStartY = 0;
 let listHasMoved = false;
@@ -937,7 +877,6 @@ let listLongPressTimer = null;
 
 function renderTabs() {
     listTabs.innerHTML = "";
-    
     listOrder.forEach((name) => {
         if (!lists[name]) return;
         
@@ -947,7 +886,6 @@ function renderTabs() {
         
         const btn = document.createElement("button");
         btn.textContent = name;
-        
         const listColor = lists[name].color || "#0a84ff";
         btn.style.background = listColor;
         btn.style.boxShadow = `0 2px 0 ${adjustColor(listColor, -20)}`;
@@ -1014,13 +952,11 @@ function renderTabs() {
             
             if (listDragItem) {
                 btn.classList.remove("dragging");
-                
                 if (listHasMoved) {
                     const newOrder = Array.from(listTabs.querySelectorAll(".list-item")).map(item => item.dataset.name);
                     listOrder = newOrder;
                     saveData();
                 }
-                
                 listDragItem = null;
                 listHasMoved = false;
             }
@@ -1073,7 +1009,6 @@ function renderTabs() {
 }
 
 /* -------------------------------   MODAL   ------------------------------- */
-
 addListBtn.addEventListener("click", () => {
     listNameInput.value = "";
     listTypeSelect.value = "todo";
@@ -1138,15 +1073,12 @@ confirmAddListBtn.addEventListener("click", () => {
         return;
     }
     const type = listTypeSelect.value;
-    
     lists[name] = { todos: [], type: type, color: selectedColor };
     listOrder.push(name);
     currentList = name;
     todos = lists[name].todos;
     listTitle.textContent = name;
-    
     updateButtonColors(selectedColor);
-    
     saveData();
     renderTabs();
     render();
@@ -1158,5 +1090,4 @@ addListModal.addEventListener("click", (e) => {
 });
 
 /* -------------------------------   START   ------------------------------- */
-
 initAuth();
