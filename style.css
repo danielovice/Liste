@@ -1,17 +1,20 @@
-/* -------------------------------------------
-   GRUNDSTILE & RESET
--------------------------------------------- */
+/* ============================================
+GRUNDSTILE & RESET
+============================================ */
+/* Box-Sizing für alle Elemente */
 * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
     -webkit-touch-callout: none;
 }
 
+/* HTML Grundstile */
 html {
     height: 100%;
     background: #111;
 }
 
+/* Body Grundstile */
 body {
     margin: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -20,9 +23,9 @@ body {
     min-height: 100vh;
     min-height: -webkit-fill-available;
     touch-action: pan-y;
-    /* Wichtig: Kein overflow hidden auf body! */
 }
 
+/* Input-Elemente */
 input, textarea, [contenteditable], .edit-input {
     -webkit-user-select: text;
     -khtml-user-select: text;
@@ -32,9 +35,9 @@ input, textarea, [contenteditable], .edit-input {
     touch-action: auto;
 }
 
-/* -------------------------------------------
-   PAGE CONTAINER (FLEXBOX FÜR STICKY FOOTER)
--------------------------------------------- */
+/* ============================================
+PAGE CONTAINER (FLEXBOX FÜR STICKY FOOTER)
+============================================ */
 .page-container {
     min-height: 100vh;
     min-height: -webkit-fill-available;
@@ -43,9 +46,9 @@ input, textarea, [contenteditable], .edit-input {
     background: #111;
 }
 
-/* -------------------------------------------
-   AUTH MODAL
--------------------------------------------- */
+/* ============================================
+AUTH MODAL
+============================================ */
 .auth-modal {
     display: none;
     position: fixed;
@@ -223,9 +226,9 @@ input, textarea, [contenteditable], .edit-input {
     opacity: 0.7;
 }
 
-/* -------------------------------------------
-   NAVBAR
--------------------------------------------- */
+/* ============================================
+NAVBAR
+============================================ */
 .navbar {
     display: flex;
     justify-content: space-between;
@@ -241,6 +244,7 @@ input, textarea, [contenteditable], .edit-input {
     font-weight: 600;
     font-size: 18px;
     letter-spacing: -0.3px;
+    color: #0a84ff;
 }
 
 .nav-buttons {
@@ -250,9 +254,9 @@ input, textarea, [contenteditable], .edit-input {
     align-items: center;
 }
 
-/* -------------------------------------------
-   MENÜ DROPDOWN
--------------------------------------------- */
+/* ============================================
+MENÜ DROPDOWN
+============================================ */
 #menuDropdown {
     position: absolute;
     right: 20px;
@@ -275,11 +279,46 @@ input, textarea, [contenteditable], .edit-input {
     display: flex;
 }
 
-.logout-btn {
+/* Untere Buttons Container */
+.menu-bottom-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     margin-top: 8px;
-    background: #ff453a;
-    box-shadow: 0 2px 0 #cc372e;
+}
+
+/* Abmelden Button */
+.logout-btn {
+    background: #ff453a !important;
+    box-shadow: 0 2px 0 #cc372e !important;
     width: 100%;
+    text-align: left;
+    padding: 12px 14px !important;
+    font-size: 15px;
+    border-radius: 10px;
+    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+.logout-btn:active {
+    transform: translateY(2px) !important;
+    box-shadow: 0 1px 0 #cc372e !important;
+}
+
+/* Reload Button */
+.reload-btn {
+    background: #0a84ff !important;
+    box-shadow: 0 2px 0 #0060df !important;
+    width: 100%;
+    text-align: center;
+    padding: 12px 14px !important;
+    font-size: 20px;
+    border-radius: 10px;
+    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
+}
+
+.reload-btn:active {
+    transform: translateY(2px) scale(0.95) !important;
+    box-shadow: 0 1px 0 #0060df !important;
 }
 
 .list-item {
@@ -323,9 +362,9 @@ input, textarea, [contenteditable], .edit-input {
     box-shadow: 0 2px 0 #cc372e;
 }
 
-/* -------------------------------------------
-   BUTTONS
--------------------------------------------- */
+/* ============================================
+BUTTONS
+============================================ */
 button {
     padding: 10px 14px;
     border-radius: 12px;
@@ -339,7 +378,6 @@ button {
     -webkit-user-select: none;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
-    /* Wichtig für Klicks */
     pointer-events: auto;
     position: relative;
     z-index: 10;
@@ -350,9 +388,9 @@ button.press-effect {
     box-shadow: 0 2px 0 #0060df;
 }
 
-/* -------------------------------------------
-   APP Container
--------------------------------------------- */
+/* ============================================
+APP CONTAINER
+============================================ */
 .app {
     width: 92%;
     max-width: 520px;
@@ -382,32 +420,9 @@ h1, #listTitle {
     justify-content: center;
 }
 
-/* -------------------------------------------
-   LIST TITLE EDIT INPUT
--------------------------------------------- */
-#listTitle .edit-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    font-size: 32px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    padding: 0;
-    margin: 0;
-    border: 2px solid #0a84ff;
-    border-radius: 12px;
-    background: #2a2a2e;
-    color: white;
-    outline: none;
-    box-sizing: border-box;
-}
-
-/* -------------------------------------------
-   INPUT Area
--------------------------------------------- */
+/* ============================================
+INPUT AREA
+============================================ */
 .input-area {
     display: flex;
     gap: 10px;
@@ -470,9 +485,9 @@ input[type="text"]::placeholder {
     font-weight: 600;
 }
 
-/* -------------------------------------------
-   FILTER BUTTONS
--------------------------------------------- */
+/* ============================================
+FILTER BUTTONS
+============================================ */
 .filters {
     display: flex;
     gap: 8px;
@@ -504,9 +519,9 @@ input[type="text"]::placeholder {
     box-shadow: 0 1px 0 #0060df;
 }
 
-/* -------------------------------------------
-   COUNTER
--------------------------------------------- */
+/* ============================================
+COUNTER
+============================================ */
 #counter {
     margin-bottom: 8px;
     color: #999;
@@ -514,9 +529,9 @@ input[type="text"]::placeholder {
     text-align: center;
 }
 
-/* -------------------------------------------
-   TODO LIST
--------------------------------------------- */
+/* ============================================
+TODO LIST
+============================================ */
 ul {
     list-style: none;
     padding: 0;
@@ -664,9 +679,9 @@ li button.delete:active {
     box-shadow: 0 1px 0 #cc372e;
 }
 
-/* -------------------------------------------
-   FOOTER (IMMER UNTEN AUF PC)
--------------------------------------------- */
+/* ============================================
+FOOTER (IMMER UNTEN AUF PC)
+============================================ */
 footer {
     text-align: center;
     font-size: 12px;
@@ -678,9 +693,9 @@ footer {
     flex-shrink: 0;
 }
 
-/* -------------------------------------------
-   MODAL
--------------------------------------------- */
+/* ============================================
+MODAL
+============================================ */
 .modal {
     display: none;
     position: fixed;
@@ -720,16 +735,20 @@ footer {
     to { transform: translateY(0); opacity: 1; }
 }
 
+/* Modal Header: X links, Titel mitte, ✓ rechts */
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 12px;
 }
 
 .modal-header h2 {
     margin: 0;
     font-size: 20px;
     font-weight: 700;
+    flex: 1;
+    text-align: center;
 }
 
 .modal-close {
@@ -746,6 +765,7 @@ footer {
     justify-content: center;
     transition: transform 0.1s;
     box-shadow: 0 4px 0 #cc2f26;
+    order: -1; /* Links positionieren */
 }
 
 .modal-close:active {
@@ -869,12 +889,11 @@ footer {
     gap: 8px;
 }
 
-/* -------------------------------------------
-   MOBILE
--------------------------------------------- */
+/* ============================================
+MOBILE
+============================================ */
 @media (max-width: 600px) {
     html, body {
-        /* Verhindert Bounce-Scrolling auf iOS */
         position: fixed;
         width: 100%;
         height: 100%;
@@ -885,7 +904,6 @@ footer {
         height: 100%;
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
-        /* Verhindert Overscroll */
         overscroll-behavior: none;
     }
     
@@ -978,202 +996,4 @@ footer {
     footer {
         display: none;
     }
-}
-
-/* -------------------------------------------
-RELOAD BUTTON IM MENÜ
--------------------------------------------- */
-.menu-reload-btn {
-    margin-top: 8px;
-    background: #0a84ff !important;
-    box-shadow: 0 2px 0 #0060df !important;
-    width: 100%;
-    text-align: left;
-    padding: 12px 14px !important;
-    font-size: 15px;
-    border-radius: 10px;
-    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
-}
-
-.menu-reload-btn:active {
-    transform: translateY(2px) !important;
-    box-shadow: 0 1px 0 #0060df !important;
-}
-
-/* -------------------------------------------
-ABMELDEN BUTTON FEEDBACK
--------------------------------------------- */
-.logout-btn {
-    margin-top: 8px;
-    background: #ff453a !important;
-    box-shadow: 0 2px 0 #cc372e !important;
-    width: 100%;
-    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
-}
-
-.logout-btn:active {
-    transform: translateY(2px) !important;
-    box-shadow: 0 1px 0 #cc372e !important;
-}
-
-/* -------------------------------------------
-CONFIRM BUTTON - IMMER BLAU
--------------------------------------------- */
-#confirmAddListBtn {
-    background: #0a84ff !important;
-    box-shadow: 0 4px 0 #0060df !important;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.1s;
-}
-
-#confirmAddListBtn:active {
-    transform: scale(0.95) !important;
-    box-shadow: 0 2px 0 #0060df !important;
-}
-
-/* -------------------------------------------
-MODAL HEADER - CORRECT ORDER
--------------------------------------------- */
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-}
-
-.modal-header h2 {
-    margin: 0;
-    font-size: 20px;
-    font-weight: 700;
-    flex: 1;
-    text-align: center;
-}
-
-.modal-save {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: #0a84ff !important;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.1s;
-    box-shadow: 0 4px 0 #0060df !important;
-    order: -1; /* Links positionieren */
-}
-
-.modal-save:active {
-    transform: scale(0.95) !important;
-    box-shadow: 0 2px 0 #0060df !important;
-}
-
-.modal-close {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: none;
-    background: #ff3b30;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: transform 0.1s;
-    box-shadow: 0 4px 0 #cc2f26;
-}
-
-.modal-close:active {
-    transform: scale(0.95);
-    box-shadow: 0 2px 0 #cc2f26;
-}
-
-/* -------------------------------------------
-RELOAD BUTTON IM MENÜ
--------------------------------------------- */
-.menu-bottom-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 8px;
-}
-
-.menu-reload-btn {
-    background: #0a84ff !important;
-    box-shadow: 0 2px 0 #0060df !important;
-    width: 100%;
-    text-align: left;
-    padding: 12px 14px !important;
-    font-size: 15px;
-    border-radius: 10px;
-    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
-}
-
-.menu-reload-btn:active {
-    transform: translateY(2px) !important;
-    box-shadow: 0 1px 0 #0060df !important;
-}
-
-/* -------------------------------------------
-ABMELDEN BUTTON FEEDBACK
--------------------------------------------- */
-.logout-btn {
-    background: #ff453a !important;
-    box-shadow: 0 2px 0 #cc372e !important;
-    width: 100%;
-    text-align: left;
-    padding: 12px 14px !important;
-    font-size: 15px;
-    border-radius: 10px;
-    transition: transform 0.1s ease, box-shadow 0.1s ease !important;
-}
-
-.logout-btn:active {
-    transform: translateY(2px) !important;
-    box-shadow: 0 1px 0 #cc372e !important;
-}
-
-/* -------------------------------------------
-LOGO
--------------------------------------------- */
-.logo {
-    font-weight: 600;
-    font-size: 18px;
-    letter-spacing: -0.3px;
-    color: #0a84ff;
-}
-
-/* -------------------------------------------
-TOGGLE PASSWORD BUTTON
--------------------------------------------- */
-.toggle-password {
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: transparent !important;
-    box-shadow: none !important;
-    border: none;
-    color: #8e8e93;
-    font-size: 20px;
-    padding: 8px;
-    cursor: pointer;
-    min-width: 40px;
-}
-
-.toggle-password:active {
-    transform: translateY(-50%) scale(0.9);
 }
