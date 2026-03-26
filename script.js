@@ -1,26 +1,39 @@
-// === WICHTIG: Dynamische API_URL ===
+// ==================== API KONFIGURATION ====================
+// Dynamische API-URL: Lokal oder Render-Server
 const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
     ? 'http://localhost:3000'
     : 'https://todo-backend-npkj.onrender.com';  // ← DEINE Render-URL hier!
 
-// Prüfen ob Mobile (iOS/Android)
+// ==================== MOBILE ERKENNUNG ====================
+// Prüfen ob Mobile Gerät (iOS/Android)
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
-// Auth Variablen
+// ==================== AUTH VARIABLEN ====================
+// Token aus localStorage laden (bleibt nach Refresh erhalten)
 let token = localStorage.getItem('todo_token');
+// Benutzername aus localStorage laden
 let currentUser = localStorage.getItem('todo_user');
+// Flag: Wird gerade registriert oder angemeldet?
 let isRegistering = false;
 
-// App Variablen
+// ==================== APP VARIABLEN ====================
+// Objekt mit allen Listen (Key: Listenname, Value: Listen-Daten)
 let lists = {};
+// Array mit Reihenfolge der Listen
 let listOrder = [];
+// Name der aktuell angezeigten Liste
 let currentList = "";
+// Array mit Todos der aktuellen Liste
 let todos = [];
+// Aktueller Filter (null, "offen", "erledigt")
 let filter = null;
+// Aktuell gewählte Farbe für neue Liste
 let selectedColor = "#0a84ff";
+// Farbe der aktuellen Liste
 let currentListColor = "#0a84ff";
 
-// DOM Elemente
+// ==================== DOM ELEMENTE ====================
+// Alle HTML-Elemente in Variablen speichern für schnelleren Zugriff
 const authModal = document.getElementById("authModal");
 const authTitle = document.getElementById("authTitle");
 const authUsername = document.getElementById("authUsername");
@@ -49,93 +62,135 @@ const confirmAddListBtn = document.getElementById("confirmAddListBtn");
 const closeModalBtn = document.getElementById("closeModalBtn");
 const colorPreview = document.getElementById("colorPreview");
 
-/* -------------------------------   AUTH   ------------------------------- */
+// ==================== XSS SCHUTZ FUNKTION ====================
+// HTML-Sonderzeichen escapen um XSS-Angriffe zu verhindern
+function escapeHTML(str) {
+    if (!str) return '';  // Falls String leer/null
+    // Ersetze HTML-Sonderzeichen durch Entities
+    return str
+        .replace(/&/g, '&amp;')   // & wird zu &amp;
+        .replace(/</g, '&lt;')    // < wird zu &lt;
+        .replace(/>/g, '&gt;')    // > wird zu &gt;
+        .replace(/"/g, '&quot;')  // " wird zu &quot;
+        .replace(/'/g, '&#039;'); // ' wird zu &#039;
+}
+
+// ==================== AUTH INIT ====================
+// Initialisierung der Auth-Funktionen
 function initAuth() {
+    // Event Listener für Submit Button
     authSubmitBtn.addEventListener("click", handleAuth);
+    // Event Listener: Enter im Passwortfeld
     authPassword.addEventListener("keypress", (e) => {
         if (e.key === "Enter") handleAuth();
     });
+    // Event Listener: Enter im Benutzernamefeld
     authUsername.addEventListener("keypress", (e) => {
         if (e.key === "Enter") authPassword.focus();
     });
+    // Event Listener: Wechsel zwischen Login/Register
     authSwitchBtn.addEventListener("click", () => {
-        isRegistering = !isRegistering;
-        updateAuthUI();
+        isRegistering = !isRegistering;  // Umschalten
+        updateAuthUI();  // UI aktualisieren
     });
+    // Event Listener: Abmelden
     logoutBtn.addEventListener("click", logout);
-    
-    // RELOAD BUTTON
+    // Event Listener: Seite neu laden
     reloadBtn.addEventListener("click", () => {
-        // Daten vorher speichern
+        // Zuerst Daten speichern
         saveData().then(() => {
-            location.reload();
+            location.reload();  // Seite neu laden
         });
     });
 
+    // Prüfen ob eingeloggt (Token vorhanden)
     if (token && currentUser) {
-        loadData();
+        loadData();  // Daten vom Server laden
     } else {
-        showAuth();
+        showAuth();  // Login Modal anzeigen
     }
 }
 
+// ==================== PASSWORT TOGGLE ====================
+// Passwort ein-/ausblenden
 function togglePassword() {
+    // Aktuellen Typ holen (password oder text)
     const type = authPassword.getAttribute("type") === "password" ? "text" : "password";
+    // Typ setzen
     authPassword.setAttribute("type", type);
 }
 
+// ==================== AUTH UI AKTUALISIEREN ====================
+// Text im Auth Modal aktualisieren (Login vs Register)
 function updateAuthUI() {
     if (isRegistering) {
+        // Registrierungs-Modus
         authTitle.textContent = "Registrieren";
         authSubmitBtn.textContent = "Registrieren";
         authSwitchBtn.textContent = "Bereits ein Konto? Anmelden";
     } else {
+        // Login-Modus
         authTitle.textContent = "Anmelden";
         authSubmitBtn.textContent = "Anmelden";
         authSwitchBtn.textContent = "Noch kein Konto? Registrieren";
     }
+    // Fehlermeldung löschen
     authError.textContent = "";
 }
 
+// ==================== AUTH MODAL ANZEIGEN ====================
+// Login/Register Modal anzeigen
 function showAuth() {
-    authModal.classList.add("show");
-    updateAuthUI();
+    authModal.classList.add("show");  // CSS Klasse hinzufügen
+    updateAuthUI();  // UI aktualisieren
 }
 
+// ==================== AUTH BEARBEITEN ====================
+// Login oder Registrierung durchführen
 async function handleAuth() {
-    const username = authUsername.value.trim();
-    const password = authPassword.value;
+    // Eingaben holen (XSS-geschützt)
+    const username = escapeHTML(authUsername.value.trim());
+    const password = authPassword.value;  // Passwort nicht escapen
     
+    // Validierung: Felder dürfen nicht leer sein
     if (!username || !password) {
         authError.textContent = "Bitte Name und Passwort eingeben";
         return;
     }
     
+    // Validierung: Passwort mindestens 4 Zeichen
     if (password.length < 4) {
         authError.textContent = "Passwort mindestens 4 Zeichen";
         return;
     }
     
+    // Button deaktivieren (verhindert doppelte Klicks)
     authSubmitBtn.disabled = true;
+    // Fehlermeldung löschen
     authError.textContent = "";
     
+    // Endpoint bestimmen (/register oder /login)
     const endpoint = isRegistering ? '/register' : '/login';
     
     try {
+        // API Request senden
         const response = await fetch(`${API_URL}${endpoint}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })
         });
         
+        // Response JSON parsen
         const data = await response.json();
         
+        // Fehlerbehandlung
         if (!response.ok) {
             authError.textContent = data.error || "Fehler";
             authSubmitBtn.disabled = false;
             return;
         }
         
+        // Bei Registrierung: Zum Login wechseln
         if (isRegistering) {
             isRegistering = false;
             authPassword.value = "";
@@ -145,54 +200,71 @@ async function handleAuth() {
             return;
         }
         
+        // Login erfolgreich: Token und Username speichern
         token = data.token;
         currentUser = data.username;
         localStorage.setItem('todo_token', token);
         localStorage.setItem('todo_user', currentUser);
         
+        // Modal schließen
         authModal.classList.remove("show");
+        // Felder leeren
         authUsername.value = "";
         authPassword.value = "";
+        // Button aktivieren
         authSubmitBtn.disabled = false;
         
+        // Daten vom Server laden
         await loadData();
         
     } catch (e) {
+        // Fehler bei Server-Verbindung
         authError.textContent = "Server nicht erreichbar";
         authSubmitBtn.disabled = false;
     }
 }
 
+// ==================== ABMELDEN ====================
+// Benutzer abmelden
 async function logout() {
+    // Token am Server ungültig machen
     if (token) {
         await fetch(`${API_URL}/logout`, {
             method: 'POST',
             headers: { 'Authorization': token }
         });
     }
+    // Lokale Daten löschen
     localStorage.removeItem('todo_token');
     localStorage.removeItem('todo_user');
+    // Variablen zurücksetzen
     token = null;
     currentUser = null;
+    // Login Modal anzeigen
     showAuth();
 }
 
-/* -------------------------------   DATEN   ------------------------------- */
+// ==================== DATEN LADEN ====================
+// Daten vom Server laden
 async function loadData() {
     try {
+        // API Request mit Token
         const response = await fetch(`${API_URL}/data`, {
             headers: { 'Authorization': token }
         });
         
+        // Nicht eingeloggt?
         if (!response.ok) {
             console.log("Nicht eingeloggt, zeige Login");
             logout();
             return;
         }
         
+        // Response parsen
         const data = await response.json();
         console.log("Geladen: ", data);
         
+        // Daten in Variablen speichern (mit Default-Werten)
         lists = data.lists || { 
             "Meine Liste": { todos: [], type: "todo", color: "#0a84ff" } 
         };
@@ -200,6 +272,7 @@ async function loadData() {
         currentList = data.currentList || "Meine Liste";
         todos = lists[currentList]?.todos || [];
         
+        // UI aktualisieren
         listTitle.textContent = currentList;
         currentListColor = lists[currentList]?.color || "#0a84ff";
         
@@ -208,12 +281,16 @@ async function loadData() {
         render();
         
     } catch (e) {
+        // Fehler beim Laden
         console.error("Laden fehlgeschlagen: ", e);
         logout();
     }
 }
 
+// ==================== DATEN SPEICHERN ====================
+// Daten am Server speichern
 async function saveData() {
+    // Daten-Objekt erstellen
     const data = {
         lists: lists,
         listOrder: listOrder,
@@ -222,6 +299,7 @@ async function saveData() {
     console.log("Speichere:", data);
     
     try {
+        // API Request
         const response = await fetch(`${API_URL}/data`, {
             method: 'POST',
             headers: { 
@@ -236,23 +314,30 @@ async function saveData() {
         return result;
         
     } catch (e) {
+        // Fehler beim Speichern
         console.error("Speichern fehlgeschlagen:", e);
         throw e;
     }
 }
 
-/* -------------------------------   UI FUNKTIONEN   ------------------------------- */
+// ==================== BUTTON FARBEN AKTUALISIEREN ====================
+// Farben aller Buttons aktualisieren
 function updateButtonColors(color) {
     currentListColor = color;
+    
+    // Add-List Button
     addListBtn.style.background = color;
     addListBtn.style.boxShadow = `0 4px 0 ${adjustColor(color, -20)}`;
     
+    // Add-Todo Button
     addBtn.style.background = color;
     addBtn.style.boxShadow = `0 4px 0 ${adjustColor(color, -20)}`;
     
+    // Menü Button
     menuBtn.style.background = color;
     menuBtn.style.boxShadow = `0 4px 0 ${adjustColor(color, -20)}`;
     
+    // Filter Buttons
     filterBtns.forEach(btn => {
         if (!btn.classList.contains('active')) {
             btn.style.background = color;
@@ -262,13 +347,15 @@ function updateButtonColors(color) {
         }
     });
     
-    // CONFIRM BUTTON IMMER BLAU
+    // Confirm Button (IMMER BLAU)
     confirmAddListBtn.style.background = "#0a84ff";
     confirmAddListBtn.style.boxShadow = `0 4px 0 #0060df`;
     
     updateColorSelectionRing(color);
 }
 
+// ==================== FARBE ANPASSEN ====================
+// Farbe heller/dunkler machen (für Schatten)
 function adjustColor(color, amount) {
     const num = parseInt(color.replace("#", ""), 16);
     const r = Math.max(0, Math.min(255, (num >> 16) + amount));
@@ -277,6 +364,8 @@ function adjustColor(color, amount) {
     return `#${(0x1000000 + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
+// ==================== FARBAUSWAHL RING ====================
+// Ring um gewählte Farbe aktualisieren
 function updateColorSelectionRing(selectedColor) {
     colorCircles.forEach(circle => {
         circle.classList.remove("selected");
@@ -288,21 +377,25 @@ function updateColorSelectionRing(selectedColor) {
     });
 }
 
-/* -------------------------------   MENU   ------------------------------- */
+// ==================== MENÜ TOGGLE ====================
+// Menü öffnen/schließen
 menuBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
+    e.stopPropagation();  // Event-Propagation stoppen
     menuDropdown.classList.toggle("show");
 });
 
+// Menü schließen wenn woanders hingeklickt wird
 document.addEventListener("click", (e) => {
     if (!menuDropdown.contains(e.target) && e.target !== menuBtn) {
         menuDropdown.classList.remove("show");
     }
 });
 
-/* -------------------------------   LISTENNAME BEARBEITEN   ------------------------------- */
+// ==================== LISTENNAME BEARBEITEN ====================
+// Double-Tap Timer
 let lastTapTitle = 0;
 
+// Touch-Event für Double-Tap
 function handleTouchEditTitle() {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTapTitle;
@@ -310,16 +403,20 @@ function handleTouchEditTitle() {
     lastTapTitle = currentTime;
 }
 
+// Event Listener
 listTitle.addEventListener("dblclick", startEditingListTitle);
 listTitle.addEventListener("touchend", handleTouchEditTitle);
 
+// Listenname bearbeiten starten
 function startEditingListTitle() {
     const currentName = currentList;
+    // Input-Feld erstellen
     const inputField = document.createElement("input");
     inputField.type = "text";
     inputField.value = currentName;
     inputField.className = "edit-input";
     
+    // Styles setzen
     inputField.style.cssText = `
         position: absolute;
         top: 0;
@@ -341,6 +438,7 @@ function startEditingListTitle() {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     `;
     
+    // Title-Element anpassen
     listTitle.style.position = "relative";
     listTitle.style.height = window.innerWidth <= 600 ? "40px" : "48px";
     listTitle.textContent = "";
@@ -348,9 +446,11 @@ function startEditingListTitle() {
     inputField.focus();
     inputField.select();
     
+    // Speichern-Funktion
     const saveEdit = () => {
         const newName = inputField.value.trim();
         if (newName && newName !== currentName) {
+            // Prüfen ob Name bereits existiert
             if (lists[newName]) {
                 alert("Eine Liste mit diesem Namen existiert bereits!");
                 listTitle.textContent = currentList;
@@ -358,6 +458,7 @@ function startEditingListTitle() {
                 listTitle.style.position = "";
                 return;
             }
+            // Liste umbenennen
             lists[newName] = lists[currentList];
             delete lists[currentList];
             const idx = listOrder.indexOf(currentList);
@@ -367,11 +468,13 @@ function startEditingListTitle() {
             saveData();
             renderTabs();
         }
+        // UI zurücksetzen
         listTitle.textContent = currentList;
         listTitle.style.height = "";
         listTitle.style.position = "";
     };
     
+    // Event Listener
     inputField.addEventListener("blur", saveEdit);
     inputField.addEventListener("keypress", e => { 
         if (e.key === "Enter") {
@@ -391,15 +494,18 @@ function startEditingListTitle() {
     });
 }
 
-/* -------------------------------   COUNTER   ------------------------------- */
+// ==================== COUNTER AKTUALISIEREN ====================
+// Counter für erledigte Todos aktualisieren
 function updateCounter() {
     const done = todos.filter(t => t.erledigt).length;
     counter.textContent = `${done} von ${todos.length} erledigt`;
 }
 
-/* -------------------------------   TODOS BEARBEITEN   ------------------------------- */
+// ==================== TODO BEARBEITEN ====================
+// Double-Tap Timer
 let lastTapTodo = 0;
 
+// Touch-Event für Double-Tap
 function handleTouchEdit(span, index) {
     const currentTime = new Date().getTime();
     const tapLength = currentTime - lastTapTodo;
@@ -407,9 +513,11 @@ function handleTouchEdit(span, index) {
     lastTapTodo = currentTime;
 }
 
+// Todo bearbeiten starten
 function startEditing(spanElement, index) {
     if (todos[index].erledigt) return;
     const currentText = todos[index].text;
+    // Input-Feld erstellen
     const inputField = document.createElement("input");
     inputField.type = "text";
     inputField.value = currentText;
@@ -418,6 +526,7 @@ function startEditing(spanElement, index) {
     inputField.focus();
     inputField.select();
     
+    // Speichern-Funktion
     const saveEdit = () => {
         const newText = inputField.value.trim();
         if (newText) todos[index].text = newText;
@@ -425,6 +534,7 @@ function startEditing(spanElement, index) {
         render();
     };
     
+    // Event Listener
     inputField.addEventListener("blur", saveEdit);
     inputField.addEventListener("keypress", e => { 
         if (e.key === "Enter") {
@@ -438,7 +548,8 @@ function startEditing(spanElement, index) {
     inputField.addEventListener("keydown", e => { if (e.key === "Escape") render(); });
 }
 
-/* -------------------------------   KATEGORISIERUNG   ------------------------------- */
+// ==================== KATEGORISIERUNG (Einkaufsliste) ====================
+// Interne Unterkategorien für Einkaufslisten
 const internalSubCategories = {
     'Milchprodukte': ['milch', 'käse', 'joghurt', 'butter', 'sahne', 'quark', 'obers', 'topfen', 'frischkäse', 'mozzarella', 'feta', 'parmesan', 'gouda', 'emmentaler', 'camembert', 'brie', 'ricotta', 'hüttenkäse', 'schmelzkäse', 'margarine', 'eier', 'ei'],
     'Obst': ['apfel', 'birne', 'banane', 'orange', 'mandarine', 'zitrone', 'limette', 'traube', 'erdbeere', 'himbeere', 'heidelbeere', 'kirsche', 'pfirsich', 'marille', 'aprikose', 'melone', 'ananas', 'mango', 'kiwi', 'obst'],
@@ -453,8 +564,11 @@ const internalSubCategories = {
     'Sonstiges': ['geschenk', 'buch', 'tier', 'hundefutter', 'katzenfutter', 'apotheke', 'medizin', 'kosmetik', 'shampoo', 'creme', 'deo']
 };
 
+// Interne Kategorie bestimmen
 function getInternalCategory(itemText) {
     const lowerText = itemText.toLowerCase().trim();
+    
+    // Zusammengesetzte Wörter prüfen
     const compoundPatterns = [
         { pattern: /(milch)(.*)(brot|semmel|weckerl)/i, category: 'Brot' },
         { pattern: /(vollkorn)(.*)(brot)/i, category: 'Brot' },
@@ -469,6 +583,7 @@ function getInternalCategory(itemText) {
         if (pattern.test(lowerText)) return category;
     }
     
+    // Endwörter prüfen
     const endKeywords = {
         'brot': 'Brot', 'semmel': 'Brot', 'weckerl': 'Brot',
         'milch': 'Milchprodukte', 'käse': 'Milchprodukte',
@@ -483,6 +598,7 @@ function getInternalCategory(itemText) {
         if (lowerText.endsWith(ending)) return category;
     }
     
+    // Keywords prüfen
     for (const [category, keywords] of Object.entries(internalSubCategories)) {
         for (const keyword of keywords) {
             if (lowerText.includes(keyword)) return category;
@@ -492,6 +608,7 @@ function getInternalCategory(itemText) {
     return 'Sonstiges';
 }
 
+// Hauptkategorie bestimmen
 function getMainCategory(itemText) {
     const internal = getInternalCategory(itemText);
     const foodCategories = ['Milchprodukte', 'Obst', 'Gemüse', 'Fleisch', 'Wurst', 'Brot', 'Getränke', 'Snacks', 'Süßigkeiten'];
@@ -504,22 +621,26 @@ function getMainCategory(itemText) {
     }
 }
 
+// Sortierreihenfolge für Lebensmittel
 function getFoodSortOrder(internalCategory) {
     const order = ['Milchprodukte', 'Obst', 'Gemüse', 'Fleisch', 'Wurst', 'Brot', 'Getränke', 'Snacks', 'Süßigkeiten'];
     return order.indexOf(internalCategory);
 }
 
-/* -------------------------------   AUTOCOMPLETE   ------------------------------- */
+// ==================== AUTOCOMPLETE ====================
+// Autocomplete-Vorschläge anzeigen
 function showAutocomplete(value) {
     const currentListData = lists[currentList];
     const isShoppingList = currentListData && currentListData.type === 'shopping';
     
+    // Nur bei Einkaufslisten
     if (!isShoppingList || !value || value.length < 2) {
         autocompleteList.classList.remove('show');
         autocompleteList.innerHTML = '';
         return;
     }
     
+    // Alle Items aus allen Einkaufslisten sammeln
     const allShoppingItems = new Set();
     for (const listName in lists) {
         if (lists[listName].type === 'shopping') {
@@ -529,6 +650,7 @@ function showAutocomplete(value) {
         }
     }
     
+    // Vorschläge filtern
     const suggestions = Array.from(allShoppingItems).filter(item => 
         item.toLowerCase().includes(value.toLowerCase()) && 
         item.toLowerCase() !== value.toLowerCase()
@@ -540,24 +662,31 @@ function showAutocomplete(value) {
         return;
     }
     
+    // Vorschläge anzeigen
     autocompleteList.innerHTML = '';
     suggestions.forEach(suggestion => {
         const div = document.createElement('div');
         div.className = 'autocomplete-item';
+        
+        // Übereinstimmung hervorheben
         const regex = new RegExp(`(${value})`, 'gi');
         const highlighted = suggestion.replace(regex, '<span class="match">$1</span>');
         div.innerHTML = highlighted;
+        
+        // Klick-Event
         div.addEventListener('click', () => {
             input.value = suggestion;
             autocompleteList.classList.remove('show');
             autocompleteList.innerHTML = '';
             input.focus();
         });
+        
         autocompleteList.appendChild(div);
     });
     autocompleteList.classList.add('show');
 }
 
+// Event Listener
 input.addEventListener('input', (e) => { showAutocomplete(e.target.value); });
 input.addEventListener('blur', () => {
     setTimeout(() => {
@@ -572,7 +701,8 @@ document.addEventListener('click', (e) => {
     }
 });
 
-/* -------------------------------   ZAHLEN HERVORHEBEN   ------------------------------- */
+// ==================== ZAHLEN HERVORHEBEN ====================
+// Zahlen und Einheiten in blau hervorheben
 function highlightNumbers(text) {
     const numberPattern = /^(\d+.?\d*\s*(g|kg|ml|l|st|stk|dag|cm|dm|mm|m|dl|cl|pack|packung|dose|flasche|glas)?\s*)/i;
     const match = text.match(numberPattern);
@@ -584,7 +714,8 @@ function highlightNumbers(text) {
     return text;
 }
 
-/* -------------------------------   RENDERN   ------------------------------- */
+// ==================== RENDERN ====================
+// Todos rendern (anzeigen)
 function render() {
     list.innerHTML = "";
     if (!todos || !Array.isArray(todos)) { 
@@ -595,6 +726,7 @@ function render() {
     const isShoppingList = currentListData && currentListData.type === 'shopping';
     
     if (isShoppingList) {
+        // Filter anwenden
         let displayTodos = todos;
         if (filter === "offen") {
             displayTodos = todos.filter(t => !t.erledigt);
@@ -602,11 +734,13 @@ function render() {
             displayTodos = todos.filter(t => t.erledigt);
         }
         
+        // Items mit Index mappen
         const itemsWithIndex = displayTodos.map(todo => ({
             ...todo,
             originalIndex: todos.indexOf(todo)
         }));
         
+        // Kategorisieren
         const categorizedItems = { 'Lebensmittel': [], 'Haushalt': [], 'Sonstiges': [] };
         
         itemsWithIndex.forEach(item => {
@@ -620,6 +754,7 @@ function render() {
             });
         });
         
+        // Sortieren
         categorizedItems['Lebensmittel'].sort((a, b) => {
             if (a._sortOrder !== b._sortOrder) {
                 return a._sortOrder - b._sortOrder;
@@ -629,6 +764,7 @@ function render() {
         categorizedItems['Haushalt'].sort((a, b) => a.text.localeCompare(b.text));
         categorizedItems['Sonstiges'].sort((a, b) => a.text.localeCompare(b.text));
         
+        // Anzeigen
         const displayOrder = ['Lebensmittel', 'Haushalt', 'Sonstiges'];
         
         displayOrder.forEach(category => {
@@ -643,6 +779,7 @@ function render() {
             }
         });
     } else {
+        // Normale Todo-Liste
         todos.forEach((todo, index) => {
             if (filter === "offen" && todo.erledigt) return;
             if (filter === "erledigt" && !todo.erledigt) return;
@@ -654,12 +791,14 @@ function render() {
     updateFilterButtons();
 }
 
+// Einzelnes Todo-Element erstellen
 function createTodoElement(todo, index, isShoppingList = false) {
     const li = document.createElement("li");
     li.dataset.index = index;
     const leftDiv = document.createElement("div");
     leftDiv.className = "li-left";
     
+    // Drag-Handle
     const dragHandle = document.createElement("div");
     dragHandle.className = "drag-handle";
     dragHandle.draggable = true;
@@ -668,6 +807,7 @@ function createTodoElement(todo, index, isShoppingList = false) {
     dragHandle.addEventListener("touchmove", handleTouchMove, { passive: false });
     dragHandle.addEventListener("touchend", handleTouchEnd, { passive: false });
     
+    // Checkbox
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.dataset.action = "toggle";
@@ -677,12 +817,14 @@ function createTodoElement(todo, index, isShoppingList = false) {
     leftDiv.appendChild(dragHandle);
     leftDiv.appendChild(checkbox);
     
+    // Text-Span (XSS-geschützt)
     const span = document.createElement("span");
-    span.innerHTML = isShoppingList ? highlightNumbers(todo.text) : todo.text;
+    span.innerHTML = isShoppingList ? highlightNumbers(escapeHTML(todo.text)) : escapeHTML(todo.text);
     if (todo.erledigt) span.classList.add("erledigt");
     span.addEventListener("dblclick", e => { e.stopPropagation(); startEditing(span, index); });
     span.addEventListener("touchend", e => { e.stopPropagation(); handleTouchEdit(span, index); });
     
+    // Delete-Button
     const delBtn = document.createElement("button");
     delBtn.textContent = "X";
     delBtn.className = "delete";
@@ -695,7 +837,8 @@ function createTodoElement(todo, index, isShoppingList = false) {
     list.appendChild(li);
 }
 
-/* -------------------------------   FILTER BUTTONS   ------------------------------- */
+// ==================== FILTER BUTTONS ====================
+// Filter-Buttons aktualisieren
 function updateFilterButtons() {
     filterBtns.forEach(btn => {
         btn.classList.remove("active");
@@ -711,14 +854,15 @@ function updateFilterButtons() {
     });
 }
 
-/* -------------------------------   TODOS HINZUFÜGEN   ------------------------------- */
+// ==================== TODO HINZUFÜGEN ====================
+// Neues Todo hinzufügen
 function addTodo() {
     const text = input.value.trim();
     if (!text) return;
     todos.push({ text, erledigt: false });
     input.value = "";
     
-    // NUR AUF MOBILE TASTATUR SCHLIESSEN
+    // Nur auf Mobile Tastatur schließen
     if (isMobile) {
         input.blur();
     }
@@ -730,12 +874,14 @@ function addTodo() {
     render();
 }
 
+// Event Listener
 addBtn.addEventListener("click", addTodo);
 input.addEventListener("keypress", e => {
     if (e.key === "Enter") addTodo();
 });
 
-/* -------------------------------   EVENT DELEGATION   ------------------------------- */
+// ==================== EVENT DELEGATION ====================
+// Klicks auf Todo-Liste behandeln
 list.addEventListener("click", e => {
     const target = e.target;
     const action = target.dataset.action;
@@ -759,7 +905,8 @@ list.addEventListener("click", e => {
     }
 });
 
-/* -------------------------------   FILTER   ------------------------------- */
+// ==================== FILTER ====================
+// Filter-Button Events
 filterBtns.forEach(btn => {
     btn.addEventListener("click", () => {
         const value = btn.dataset.filter;
@@ -773,9 +920,10 @@ filterBtns.forEach(btn => {
     });
 });
 
-/* -------------------------------   DRAG & DROP   ------------------------------- */
+// ==================== DRAG & DROP ====================
 let draggedItemIndex = null;
 
+// Drag Start
 list.addEventListener("dragstart", e => {
     const handle = e.target.closest(".drag-handle");
     if (!handle) return;
@@ -785,12 +933,14 @@ list.addEventListener("dragstart", e => {
     li.classList.add("dragging");
 });
 
+// Drag End
 list.addEventListener("dragend", e => {
     const li = e.target.closest("li");
     if (li) li.classList.remove("dragging");
     draggedItemIndex = null;
 });
 
+// Drag Over
 list.addEventListener("dragover", e => {
     e.preventDefault();
     const after = getDragAfterElement(list, e.clientY);
@@ -800,6 +950,7 @@ list.addEventListener("dragover", e => {
     else list.insertBefore(dragging, after);
 });
 
+// Drop
 list.addEventListener("drop", () => {
     const items = Array.from(list.children);
     const newTodos = [];
@@ -815,6 +966,7 @@ list.addEventListener("drop", () => {
     } else render();
 });
 
+// Element nach Mausposition finden
 function getDragAfterElement(container, y) {
     const elements = [...container.querySelectorAll("li:not(.dragging)")];
     return elements.reduce((closest, child) => {
@@ -825,9 +977,10 @@ function getDragAfterElement(container, y) {
     }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
-/* -------------------------------   TOUCH DRAG   ------------------------------- */
+// ==================== TOUCH DRAG ====================
 let touchItem = null, touchStartY = 0, touchStartX = 0, hasMoved = false;
 
+// Touch Start
 function handleTouchStart(e) {
     const handle = e.target.closest(".drag-handle");
     if (!handle) return;
@@ -839,6 +992,7 @@ function handleTouchStart(e) {
     hasMoved = false;
 }
 
+// Touch Move
 function handleTouchMove(e) {
     if (!touchItem) return;
     const touch = e.touches[0];
@@ -855,6 +1009,7 @@ function handleTouchMove(e) {
     else list.insertBefore(touchItem, after);
 }
 
+// Touch End
 function handleTouchEnd() {
     if (!touchItem) return;
     touchItem.classList.remove("dragging");
@@ -874,12 +1029,13 @@ function handleTouchEnd() {
     touchItem = null; hasMoved = false;
 }
 
-/* -------------------------------   LISTEN MENÜ   ------------------------------- */
+// ==================== LISTEN MENÜ ====================
 let listDragItem = null;
 let listTouchStartY = 0;
 let listHasMoved = false;
 let listLongPressTimer = null;
 
+// Tabs rendern
 function renderTabs() {
     listTabs.innerHTML = "";
     listOrder.forEach((name) => {
@@ -906,6 +1062,7 @@ function renderTabs() {
             saveData();
         };
         
+        // Touch Events für Drag
         btn.addEventListener("touchstart", (e) => {
             listLongPressTimer = setTimeout(() => {
                 listDragItem = btn;
@@ -978,6 +1135,7 @@ function renderTabs() {
             }
         });
         
+        // Delete Button
         const del = document.createElement("button");
         del.textContent = "X";
         del.onclick = e => {
@@ -1013,7 +1171,8 @@ function renderTabs() {
     });
 }
 
-/* -------------------------------   MODAL   ------------------------------- */
+// ==================== MODAL ====================
+// Modal öffnen
 addListBtn.addEventListener("click", () => {
     listNameInput.value = "";
     listTypeSelect.value = "todo";
@@ -1028,10 +1187,12 @@ addListBtn.addEventListener("click", () => {
     addListModal.style.display = "flex";
 });
 
+// Modal schließen
 closeModalBtn.addEventListener("click", () => {
     addListModal.style.display = "none";
 });
 
+// Listentyp ändern
 listTypeSelect.addEventListener("change", () => {
     if (listTypeSelect.value === "shopping") {
         listNameInput.value = "Einkaufsliste";
@@ -1059,6 +1220,7 @@ listTypeSelect.addEventListener("change", () => {
     }
 });
 
+// Farbkreise auswählen
 colorCircles.forEach(circle => {
     circle.addEventListener("click", () => {
         selectedColor = circle.dataset.color;
@@ -1067,6 +1229,7 @@ colorCircles.forEach(circle => {
     });
 });
 
+// Liste bestätigen
 confirmAddListBtn.addEventListener("click", () => {
     const name = listNameInput.value.trim();
     if (!name) {
@@ -1090,9 +1253,11 @@ confirmAddListBtn.addEventListener("click", () => {
     addListModal.style.display = "none";
 });
 
+// Modal bei Klick außerhalb schließen
 addListModal.addEventListener("click", (e) => {
     if (e.target === addListModal) addListModal.style.display = "none";
 });
 
-/* -------------------------------   START   ------------------------------- */
+// ==================== START ====================
+// App initialisieren
 initAuth();
