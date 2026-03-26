@@ -66,7 +66,10 @@ function initAuth() {
     
     // RELOAD BUTTON
     reloadBtn.addEventListener("click", () => {
-        location.reload();
+        // Daten vorher speichern
+        saveData().then(() => {
+            location.reload();
+        });
     });
 
     if (token && currentUser) {
@@ -74,6 +77,11 @@ function initAuth() {
     } else {
         showAuth();
     }
+}
+
+function togglePassword() {
+    const type = authPassword.getAttribute("type") === "password" ? "text" : "password";
+    authPassword.setAttribute("type", type);
 }
 
 function updateAuthUI() {
@@ -92,11 +100,6 @@ function updateAuthUI() {
 function showAuth() {
     authModal.classList.add("show");
     updateAuthUI();
-}
-
-function togglePassword() {
-    const type = authPassword.getAttribute("type") === "password" ? "text" : "password";
-    authPassword.setAttribute("type", type);
 }
 
 async function handleAuth() {
@@ -230,9 +233,11 @@ async function saveData() {
         
         const result = await response.json();
         console.log("Server antwortet:", result);
+        return result;
         
     } catch (e) {
         console.error("Speichern fehlgeschlagen:", e);
+        throw e;
     }
 }
 
